@@ -58,7 +58,6 @@ import com.movtery.zalithlauncher.path.PathManager
 import com.movtery.zalithlauncher.path.URL_SUPPORT
 import com.movtery.zalithlauncher.setting.LauncherSettings
 import com.movtery.zalithlauncher.setting.MiscSettings
-import com.rcl.horizon.HorizonLauncher
 import com.movtery.zalithlauncher.ui.AndroidStringText
 import com.movtery.zalithlauncher.ui.androidText
 import com.movtery.zalithlauncher.ui.base.BaseAppCompatActivity
@@ -289,10 +288,15 @@ class MainActivity : BaseAppCompatActivity() {
                     is EventViewModel.Event.Launch.Game -> {
                         if (com.movtery.zalithlauncher.setting.MiscSettings.activeBackend.getValue() == "horizon") {
                             val dir = event.version?.getGameDir()?.absolutePath
-                            if (!dir.isNullOrEmpty()) {
-                                com.rcl.horizon.HorizonLauncher.launch(this@MainActivity, dir)
-                            } else {
-                                Toast.makeText(this@MainActivity, "Horizon: no version selected", Toast.LENGTH_LONG).show()
+                            try {
+                                // Launch the Horizon (Rust) engine host activity by name so this
+                                // module has no compile-time dependency on the RCL backend library.
+                                val cls = Class.forName("io.github.juanluci.starling.StarlingActivity")
+                                val intent = Intent(this@MainActivity, cls)
+                                intent.putExtra("rcl_game_dir", dir)
+                                startActivity(intent)
+                            } catch (e: Throwable) {
+                                Toast.makeText(this@MainActivity, "Horizon engine unavailable: ${e.message}", Toast.LENGTH_LONG).show()
                             }
                         } else {
                             launchGameViewModel.tryLaunch(event.version)
