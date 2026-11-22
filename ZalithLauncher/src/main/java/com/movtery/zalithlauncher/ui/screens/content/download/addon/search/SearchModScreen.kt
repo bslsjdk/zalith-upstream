@@ -61,6 +61,7 @@ fun SearchModScreen(
             when (platform) {
                 Platform.CURSEFORGE -> CurseForgeModCategory.entries
                 Platform.MODRINTH -> ModrinthModCategory.entries
+                Platform.HORIZON -> emptyList()
             }
         },
         enableModLoader = true,
@@ -68,6 +69,7 @@ fun SearchModScreen(
             when (platform) {
                 Platform.CURSEFORGE -> curseForgeModLoaderFilters
                 Platform.MODRINTH -> modrinthModLoaderFilters
+                Platform.HORIZON -> emptyList()
             }
         },
         mapCategories = { platform, string ->
@@ -79,6 +81,7 @@ fun SearchModScreen(
                 Platform.CURSEFORGE -> {
                     CurseForgeModCategory.entries.find { it.describe() == string }
                 }
+                Platform.HORIZON -> null
             }
         },
         swapToDownload = swapToDownload,
