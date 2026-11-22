@@ -38,10 +38,14 @@ done
 # RCL CI shim: when the caller asks for a bare ":assemble" (no variant),
 # build Debug only so the unsigned/secret-less fork does not fail on release signing.
 _rcl_args=""
+_rcl_is_all=0
 for _rcl_arg in "$@"; do
     if [ "$_rcl_arg" = "ZalithLauncher:assemble" ]; then
         _rcl_arg="ZalithLauncher:assembleDebug"
     fi
+    case "$_rcl_arg" in
+        *arch=all) _rcl_is_all=1 ;;
+    esac
     _rcl_args="$_rcl_args '$_rcl_arg'"
 done
 if [ -n "$_rcl_args" ]; then
@@ -199,12 +203,6 @@ eval set -- $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "\"-Dorg.gradle.appname=$A
 # (only the arch=all matrix job uploads; uses the runner's built-in GITHUB_TOKEN).
 "$JAVACMD" "$@"
 _rcl_rc=$?
-_rcl_is_all=0
-for _a in "$@"; do
-    case "$_a" in
-        *arch=all) _rcl_is_all=1 ;;
-    esac
-done
 if [ "$_rcl_rc" -eq 0 ] && [ "$_rcl_is_all" -eq 1 ] && [ -n "${GITHUB_TOKEN:-}" ]; then
     _apk=$(find ZalithLauncher/build/outputs/apk -name '*.apk' -type f 2>/dev/null | head -1)
     if [ -n "$_apk" ]; then
