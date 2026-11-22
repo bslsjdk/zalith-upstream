@@ -122,6 +122,7 @@ fun PlatformIdentifier(
 fun Platform.getDrawable() = when (this) {
     Platform.CURSEFORGE -> R.drawable.img_platform_curseforge
     Platform.MODRINTH -> R.drawable.img_platform_modrinth
+    Platform.HORIZON -> R.drawable.img_platform_modrinth
 }
 
 /**
@@ -130,6 +131,7 @@ fun Platform.getDrawable() = when (this) {
 fun Platform.getBrandColor(): Color = when (this) {
     Platform.CURSEFORGE -> Color(0xFFF16436)
     Platform.MODRINTH -> Color(0xFF1BD96A)
+    Platform.HORIZON -> Color(0xFF1BD96A)
 }
 
 /**
@@ -138,6 +140,7 @@ fun Platform.getBrandColor(): Color = when (this) {
 fun Platform.getBrandContentColor(): Color = when (this) {
     Platform.CURSEFORGE -> Color.White
     Platform.MODRINTH -> Color(0xFF072314)
+    Platform.HORIZON -> Color(0xFF072314)
 }
 
 /**
