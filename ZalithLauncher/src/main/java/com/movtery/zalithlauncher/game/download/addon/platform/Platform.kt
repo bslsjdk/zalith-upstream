@@ -32,5 +32,7 @@ enum class Platform(val displayName: String): Parcelable {
     @SerialName("CURSEFORGE")
     CURSEFORGE("CurseForge"),
     @SerialName("MODRINTH")
-    MODRINTH("Modrinth")
+    MODRINTH("Modrinth"),
+    @SerialName("HORIZON")
+    HORIZON("Horizon")
 }
