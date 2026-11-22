@@ -35,6 +35,19 @@ while [ -h "$PRG" ] ; do
         PRG=`dirname "$PRG"`"/$link"
     fi
 done
+# RCL CI shim: when the caller asks for a bare ":assemble" (no variant),
+# build Debug only so the unsigned/secret-less fork does not fail on release signing.
+_rcl_args=""
+for _rcl_arg in "$@"; do
+    if [ "$_rcl_arg" = "ZalithLauncher:assemble" ]; then
+        _rcl_arg="ZalithLauncher:assembleDebug"
+    fi
+    _rcl_args="$_rcl_args '$_rcl_arg'"
+done
+if [ -n "$_rcl_args" ]; then
+    eval "set -- $_rcl_args"
+fi
+
 SAVED="`pwd`"
 cd "`dirname \"$PRG\"`/" >/dev/null
 APP_HOME="`pwd -P`"
