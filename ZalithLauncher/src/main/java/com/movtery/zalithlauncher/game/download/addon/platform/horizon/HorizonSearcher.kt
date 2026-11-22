@@ -3,7 +3,6 @@ package com.movtery.zalithlauncher.game.download.addon.platform.horizon
 import com.movtery.zalithlauncher.game.download.addon.platform.AbstractPlatformSearcher
 import com.movtery.zalithlauncher.game.download.addon.platform.Platform
 import com.movtery.zalithlauncher.game.download.addon.platform.PlatformClasses
-import com.movtery.zalithlauncher.game.download.addon.platform.PlatformDependency
 import com.movtery.zalithlauncher.game.download.addon.platform.PlatformDependencyType
 import com.movtery.zalithlauncher.game.download.addon.platform.PlatformDisplayLabel
 import com.movtery.zalithlauncher.game.download.addon.platform.PlatformFilterCode
@@ -14,13 +13,11 @@ import com.movtery.zalithlauncher.game.download.addon.platform.PlatformSearchFil
 import com.movtery.zalithlauncher.game.download.addon.platform.PlatformSearchResult
 import com.movtery.zalithlauncher.game.download.addon.platform.PlatformVersion
 import com.movtery.zalithlauncher.ui.screens.content.download.addon.elements.AddonPage
+import org.jackhuang.hmcl.addon.AddonProjectInfo
 import java.io.File
 import java.time.Instant
 
-/**
- * Maps Horizon's public mod index onto ZL2's platform abstractions so the
- * existing download UI can browse/install Horizon (Rust) content verbatim.
- */
+/** Maps Horizon's public mod index onto ZL2's platform abstractions. */
 class HorizonSearcher(
     val api: String = HorizonRegistry.INDEX_URL,
     source: String = "Horizon Registry"
@@ -132,9 +129,9 @@ class HorizonSearcher(
         override fun platformGameVersion(): Array<String> = v.game?.let { arrayOf(it) } ?: emptyArray()
         override fun platformLoaders(): List<PlatformDisplayLabel> = emptyList()
         override fun platformReleaseType(): PlatformReleaseType = PlatformReleaseType.RELEASE
-        override fun platformDependencies(): List<PlatformDependency> =
+        override fun platformDependencies(): List<PlatformVersion.PlatformDependency> =
             v.requires?.map {
-                PlatformDependency(
+                PlatformVersion.PlatformDependency(
                     platform = Platform.HORIZON,
                     projectId = it.id,
                     versionId = it.version,
@@ -156,12 +153,15 @@ class HorizonSearcher(
         val limit: Int,
         val totalHits: Int,
     ) : PlatformSearchResult {
+        private val pageData: List<Pair<PlatformSearchData, AddonProjectInfo?>> =
+            hits.map { it to null }
+
         override fun getAddonPage(classes: PlatformClasses): AddonPage = AddonPage(
             pageNumber = offset / limit + 1,
             pageIndex = offset,
             totalPage = (totalHits + limit - 1) / limit,
             isLastPage = (offset + limit) >= totalHits,
-            data = hits.map { it to null },
+            data = pageData,
         )
         override fun processChineseSearchResults(
             searchFilter: String,
