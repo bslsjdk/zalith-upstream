@@ -89,6 +89,7 @@ suspend fun parserModPack(
             )
             parseModPackGeneric(file, targetFolder, task, config)
         }
+        Platform.HORIZON -> error("Horizon modpack download is not supported by the Java modpack parser")
     }
 }
 
