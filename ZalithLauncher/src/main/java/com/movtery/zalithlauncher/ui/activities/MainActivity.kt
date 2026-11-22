@@ -287,10 +287,10 @@ class MainActivity : BaseAppCompatActivity() {
                         showDownloadPlugins(event.link)
                     }
                     is EventViewModel.Event.Launch.Game -> {
-                        if (MiscSettings.activeBackend.state == "horizon") {
-                            val gameDir = event.version?.getGameDir()?.absolutePath
-                            if (!gameDir.isNullOrEmpty()) {
-                                HorizonLauncher.launch(this@MainActivity, gameDir)
+                        if (com.movtery.zalithlauncher.setting.MiscSettings.activeBackend.getValue() == "horizon") {
+                            val dir = event.version?.getGameDir()?.absolutePath
+                            if (!dir.isNullOrEmpty()) {
+                                com.rcl.horizon.HorizonLauncher.launch(this@MainActivity, dir)
                             } else {
                                 Toast.makeText(this@MainActivity, "Horizon: no version selected", Toast.LENGTH_LONG).show()
                             }
