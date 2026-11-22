@@ -331,8 +331,7 @@ suspend fun getVersionById(
             searcher.getVersion(versionId)
         }
         Platform.CURSEFORGE -> error("CurseForge dependencies do not carry a version id.")
-        Platform.HORIZON -> horizonSearcher.getVersions(versionId).firstOrNull()
-            ?: error("Horizon version not found: $versionId")
+        Platform.HORIZON -> error("Horizon dependency versions are resolved by project id, not version id: $versionId")
     }
 }
 
