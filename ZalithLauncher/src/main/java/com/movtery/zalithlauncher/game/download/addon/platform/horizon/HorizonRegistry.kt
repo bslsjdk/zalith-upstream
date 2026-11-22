@@ -1,34 +1,17 @@
 package com.movtery.zalithlauncher.game.download.addon.platform.horizon
 
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsText
-import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.json.Json
+import com.movtery.zalithlauncher.utils.network.httpGetJson
 
 /**
- * Core adapter for Horizon's public mod registry — the logic layer that is
- * independent of ZL2's download UI types.
+ * Logic adapter for Horizon's public mod registry.
  *
  * Reads https://horizon-rust.github.io/horizon-mods/index.json (schema 1,
- * CORS-enabled, 269 projects as of 2026-11-22) and exposes search/filter/
- * project/version lookups. A future HorizonSearcher can map these results
- * onto ZL2's PlatformProject/PlatformVersion/PlatformSearchResult interfaces
- * to reuse the existing mod-download screens verbatim.
+ * CORS-enabled, 269 projects as of 2026-11-22) via ZL2's own HTTP/JSON layer,
+ * and exposes search/filter/project/version lookups. Deliberately independent
+ * of ZL2's UI types so it can be verified and compiled in isolation.
  */
 object HorizonRegistry {
     const val INDEX_URL = "https://horizon-rust.github.io/horizon-mods/index.json"
-
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        coerceInputValues = true
-    }
-    private val client = HttpClient(OkHttp) {
-        install(ContentNegotiation) { json(json) }
-    }
 
     @Volatile
     private var cached: HorizonIndex? = null
@@ -39,8 +22,7 @@ object HorizonRegistry {
         val now = System.currentTimeMillis()
         val hit = cached
         if (!force && hit != null && now - cachedAt < CACHE_MS) return hit
-        val text = client.get(INDEX_URL).bodyAsText()
-        val parsed = json.decodeFromString<HorizonIndex>(text)
+        val parsed = httpGetJson<HorizonIndex>(url = INDEX_URL)
         cached = parsed
         cachedAt = now
         return parsed
