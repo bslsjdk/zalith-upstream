@@ -58,6 +58,7 @@ import com.movtery.zalithlauncher.path.PathManager
 import com.movtery.zalithlauncher.path.URL_SUPPORT
 import com.movtery.zalithlauncher.setting.LauncherSettings
 import com.movtery.zalithlauncher.setting.MiscSettings
+import com.rcl.horizon.HorizonLauncher
 import com.movtery.zalithlauncher.ui.AndroidStringText
 import com.movtery.zalithlauncher.ui.androidText
 import com.movtery.zalithlauncher.ui.base.BaseAppCompatActivity
@@ -286,7 +287,16 @@ class MainActivity : BaseAppCompatActivity() {
                         showDownloadPlugins(event.link)
                     }
                     is EventViewModel.Event.Launch.Game -> {
-                        launchGameViewModel.tryLaunch(event.version)
+                        if (MiscSettings.activeBackend.state == "horizon") {
+                            val gameDir = event.version?.getGameDir()?.absolutePath
+                            if (!gameDir.isNullOrEmpty()) {
+                                HorizonLauncher.launch(this@MainActivity, gameDir)
+                            } else {
+                                Toast.makeText(this@MainActivity, "Horizon: no version selected", Toast.LENGTH_LONG).show()
+                            }
+                        } else {
+                            launchGameViewModel.tryLaunch(event.version)
+                        }
                     }
                     is EventViewModel.Event.Launch.PlayServer -> {
                         launchGameViewModel.quickPlayServer(event.version, event.address)
