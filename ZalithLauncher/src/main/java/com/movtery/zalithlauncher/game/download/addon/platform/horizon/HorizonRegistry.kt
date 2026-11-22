@@ -3,15 +3,13 @@ package com.movtery.zalithlauncher.game.download.addon.platform.horizon
 import com.movtery.zalithlauncher.utils.network.httpGetJson
 
 /**
- * Logic adapter for Horizon's public mod registry.
- *
- * Reads https://horizon-rust.github.io/horizon-mods/index.json (schema 1,
- * CORS-enabled, 269 projects as of 2026-11-22) via ZL2's own HTTP/JSON layer,
- * and exposes search/filter/project/version lookups. Deliberately independent
- * of ZL2's UI types so it can be verified and compiled in isolation.
+ * Logic adapter for Horizon's public mod registry (schema 1).
+ * Reads https://horizon-rust.github.io/horizon-mods/index.json via ZL2's
+ * HTTP/JSON layer. Deliberately independent of ZL2's UI types.
  */
 object HorizonRegistry {
     const val INDEX_URL = "https://horizon-rust.github.io/horizon-mods/index.json"
+    const val HORIZON_GAME = "26.3"
 
     @Volatile
     private var cached: HorizonIndex? = null
@@ -30,6 +28,11 @@ object HorizonRegistry {
 
     data class SearchHit(val project: HorizonProject, val latest: HorizonVersion?)
 
+    /**
+     * Horizon targets a single MC version (26.3). ZL2's gameVersion filter may
+     * carry a Java-version string (1.21.x) that would exclude everything, so we
+     * only apply it when it is blank or equals the Horizon target version.
+     */
     fun search(
         index: HorizonIndex,
         query: String,
@@ -40,6 +43,7 @@ object HorizonRegistry {
     ): List<SearchHit> {
         val q = query.trim().lowercase()
         val revokedIds = index.revoked.map { it.id }.toSet()
+        val applyGameFilter = !gameVersion.isNullOrBlank() && gameVersion == HORIZON_GAME
         return index.projects.asSequence()
             .filter { it.id !in revokedIds }
             .filter { kind == null || HorizonKind.from(it.kind) == kind }
@@ -48,7 +52,7 @@ object HorizonRegistry {
                     it.summary?.lowercase()?.contains(q) == true
             }
             .map { p -> SearchHit(p, p.versions.firstOrNull { v ->
-                gameVersion == null || v.game == null || v.game == gameVersion
+                !applyGameFilter || v.game == null || v.game == gameVersion
             } ?: p.versions.firstOrNull()) }
             .filter { it.latest != null }
             .sortedByDescending { it.project.downloads }
