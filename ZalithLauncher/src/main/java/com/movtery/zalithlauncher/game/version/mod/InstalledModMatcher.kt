@@ -148,6 +148,7 @@ suspend fun matchInstalledMods(
                             Platform.MODRINTH -> getModrinthVersBySha1(chunk.map { it.sha1 })
                             Platform.CURSEFORGE ->
                                 getCFFilesByFingerprints(chunk.map { it.murmur2 }).mapKeys { it.key.toString() }
+                            Platform.HORIZON -> emptyMap()
                         }
                     } catch (e: CancellationException) {
                         throw e
@@ -207,6 +208,7 @@ private fun ModFingerprints.cacheKey(platform: Platform): String =
 private fun ModFingerprints.fingerprintValue(platform: Platform): String = when (platform) {
     Platform.MODRINTH -> sha1
     Platform.CURSEFORGE -> murmur2.toString()
+    Platform.HORIZON -> sha1
 }
 
 /**
