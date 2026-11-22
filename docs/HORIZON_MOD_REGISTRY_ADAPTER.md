@@ -88,3 +88,22 @@ UI 100% ZL2 原生，只换了数据源。
   再按 HorizonKind.folder 放进游戏目录——ZL2 原安装器按 Java 路径处理，需单独适配安装分支。
 - 图标：HORIZON 暂用 modrinth 占位，可加 `img_platform_horizon` 资源。
 - 平台选择是否只在 HORIZON 后端显示，可按 MiscSettings.activeBackend 再过滤。
+
+
+## 8. 编译审查结果（2026-11-22，GitHub Actions 云端）
+
+本机无 java/gradle/kotlin 工具链，改用 fork 的 GitHub Actions `build.yml` 云端编译验证：
+
+- **第 1 次编译（run 45050195276）失败**：`when expression must be exhaustive, add HORIZON branch`
+  共 10 个文件漏分支 + MainActivity 的 `com.rcl` unresolved + HorizonSearcher 漏 DATAPACK。
+- **逐项修复**（全部 contents API 验证）：
+  补 10 个文件的 HORIZON 穷尽分支；HorizonSearcher 用嵌套 `PlatformVersion.PlatformDependency` +
+  pageData 显式类型；HorizonRegistry 改用 ZL2 的 `httpGetJson<T>`（GLOBAL_JSON 有 ignoreUnknownKeys）；
+  gameVersion 过滤修复（Horizon 全是 26.3）；MainActivity 改反射启动引擎（去掉 fork 对 rcl-core 的编译期依赖）。
+- **第 2 次编译（run 45051886684）**：**Kotlin 编译 0 错误（无 `e:` 行）**，失败在
+  `:ZalithLauncher:packageRelease` 的 `KeytoolException: Failed to read key movtery_zalith` ——
+  这是 fork 缺 release 签名密钥（ZL2 原仓库靠 secrets 注入）的**打包配置问题，与代码无关**。
+- **结论**：HORIZON 适配相关 Kotlin 代码已通过真实 Gradle 编译验证（Kotlin compile 阶段全过）。
+  剩余签名失败是 fork 环境固有，不影响代码正确性；要出可安装 APK 需配置签名密钥或改用 debug variant。
+- 缓存：build.yml 已用 `gradle/actions/setup-gradle@v5` 自带 Gradle 依赖缓存（日志见 cache 读写）。
+- 工程一致性：RCL 的 zalith-upstream submodule 指针已更新到 fork HEAD b84a62（含全部适配）。
