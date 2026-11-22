@@ -55,6 +55,7 @@ fun SearchResourcePackScreen(
             when (platform) {
                 Platform.CURSEFORGE -> CurseForgeResourcePackCategory.entries
                 Platform.MODRINTH -> ModrinthResourcePackCategory.entries
+                Platform.HORIZON -> emptyList()
             }
         },
         mapCategories = { platform, string ->
@@ -66,6 +67,7 @@ fun SearchResourcePackScreen(
                 Platform.CURSEFORGE -> {
                     CurseForgeResourcePackCategory.entries.find { it.describe() == string }
                 }
+                Platform.HORIZON -> null
             }
         },
         swapToDownload = swapToDownload
