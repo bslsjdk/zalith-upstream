@@ -141,6 +141,7 @@ fun SearchModPackScreen(
             when (platform) {
                 Platform.CURSEFORGE -> CurseForgeModpackCategory.entries
                 Platform.MODRINTH -> ModrinthModpackCategory.entries
+                Platform.HORIZON -> emptyList()
             }
         },
         enableModLoader = true,
@@ -148,6 +149,7 @@ fun SearchModPackScreen(
             when (platform) {
                 Platform.CURSEFORGE -> curseForgeModLoaderFilters
                 Platform.MODRINTH -> modrinthModLoaderFilters
+                Platform.HORIZON -> emptyList()
             }
         },
         mapCategories = { platform, string ->
@@ -159,6 +161,7 @@ fun SearchModPackScreen(
                 Platform.CURSEFORGE -> {
                     CurseForgeModpackCategory.entries.find { it.describe() == string }
                 }
+                Platform.HORIZON -> null
             }
         },
         swapToDownload = swapToDownload,
