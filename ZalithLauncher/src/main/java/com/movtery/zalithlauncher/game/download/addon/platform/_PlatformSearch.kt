@@ -23,6 +23,7 @@ import com.movtery.zalithlauncher.game.addons.mirror.MirrorPriority
 import com.movtery.zalithlauncher.game.addons.mirror.resolveMirrorPriority
 import com.movtery.zalithlauncher.game.download.addon.mapExceptionToMessage
 import com.movtery.zalithlauncher.game.download.addon.platform.curseforge.CurseForgeSearcher
+import com.movtery.zalithlauncher.game.download.addon.platform.horizon.HorizonSearcher
 import com.movtery.zalithlauncher.game.download.addon.platform.curseforge.MCIM_CURSEFORGE_API
 import com.movtery.zalithlauncher.game.download.addon.platform.curseforge.models.CurseForgeFile
 import com.movtery.zalithlauncher.game.download.addon.platform.modrinth.MCIM_MODRINTH_API
@@ -54,6 +55,7 @@ private val mirrorModrinthSearcher = ModrinthSearcher(
 )
 
 private val curseForgeSearcher = CurseForgeSearcher()
+private val horizonSearcher = HorizonSearcher()
 private val mirrorCurseForgeSearcher = CurseForgeSearcher(
     api = MCIM_CURSEFORGE_API,
     source = "MCIM CurseForge"
@@ -180,6 +182,11 @@ suspend fun searchAddons(
                             platformClasses = platformClasses
                         )
                     }
+                    Platform.HORIZON -> horizonSearcher.searchAddons(
+                        query = query,
+                        searchFilter = searchFilterForQuery,
+                        platformClasses = platformClasses
+                    )
                 }
                 lastResult = r
                 if (r.getAddonPage(platformClasses).data.isNotEmpty()) break
@@ -227,6 +234,7 @@ suspend fun getVersions(
             pageCallback = pageCallback
         )
     }
+    Platform.HORIZON -> horizonSearcher.getVersions(projectID, pageCallback)
 }
 
 suspend fun <E> getVersions(
@@ -268,6 +276,7 @@ suspend fun <E> getProject(
             ) { searcher ->
                 searcher.getProject(projectID)
             }
+            Platform.HORIZON -> horizonSearcher.getProject(projectID)
         }
     }.fold(
         onSuccess = onSuccess,
@@ -301,6 +310,7 @@ suspend fun getProjectByVersion(
         ) { searcher ->
             searcher.getProject(projectId)
         }
+        Platform.HORIZON -> horizonSearcher.getProject(projectId)
     }
 }
 
@@ -321,6 +331,8 @@ suspend fun getVersionById(
             searcher.getVersion(versionId)
         }
         Platform.CURSEFORGE -> error("CurseForge dependencies do not carry a version id.")
+        Platform.HORIZON -> horizonSearcher.getVersions(versionId).firstOrNull()
+            ?: error("Horizon version not found: $versionId")
     }
 }
 
