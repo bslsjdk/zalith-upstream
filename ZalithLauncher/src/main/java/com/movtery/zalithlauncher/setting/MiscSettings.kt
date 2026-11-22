@@ -34,6 +34,11 @@ object MiscSettings : SettingsRegistry() {
     val currentGamePathId = stringSetting("currentGamePathId", GamePathManager.DEFAULT_ID)
 
     /**
+     * 当前使用的游戏后端：java = ZL2 原生 Pojav 后端；horizon = RCL 集成的 Horizon(Rust) 引擎。
+     */
+    val activeBackend = stringSetting("activeBackend", "java")
+
+    /**
      * 玩家结束运行游戏的次数
      */
     val finishedGame = intSetting("finishedGame", 0)
