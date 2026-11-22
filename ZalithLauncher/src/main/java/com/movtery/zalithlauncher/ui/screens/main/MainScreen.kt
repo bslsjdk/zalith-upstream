@@ -80,6 +80,7 @@ import com.movtery.zalithlauncher.game.version.installed.Version
 import com.movtery.zalithlauncher.game.version.installed.VersionsManager
 import com.movtery.zalithlauncher.path.PathManager
 import com.movtery.zalithlauncher.setting.LauncherSettings
+import com.movtery.zalithlauncher.setting.MiscSettings
 import com.movtery.zalithlauncher.ui.AndroidStringText
 import com.movtery.zalithlauncher.ui.androidText
 import com.movtery.zalithlauncher.ui.components.BackgroundCard
@@ -381,6 +382,27 @@ private fun <E: TitledNavKey> TopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // RCL backend switch: tap to toggle Java (Pojav) / Horizon (Rust).
+                val activeBackend = MiscSettings.activeBackend.state
+                val backendLabel = if (activeBackend == "horizon") "HORIZON" else "JAVA"
+                Box(
+                    modifier = Modifier
+                        .clip(shape = MaterialTheme.shapes.large)
+                        .clickable {
+                            val next = if (activeBackend == "horizon") "java" else "horizon"
+                            MiscSettings.activeBackend.save(next)
+                        }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = backendLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (activeBackend == "horizon")
+                            MaterialTheme.colorScheme.primary
+                        else LocalContentColor.current
+                    )
+                }
                 AnimatedVisibility(
                     visible = !(isTasksExpanded || taskRunning),
                     enter = slideInVertically(
