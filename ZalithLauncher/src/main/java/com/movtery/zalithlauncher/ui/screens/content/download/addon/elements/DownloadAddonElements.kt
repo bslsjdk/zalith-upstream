@@ -487,6 +487,7 @@ fun ProjectUrlsContent(
             painter = when (platform) {
                 Platform.CURSEFORGE -> painterResource(R.drawable.img_platform_curseforge)
                 Platform.MODRINTH -> painterResource(R.drawable.img_platform_modrinth)
+                Platform.HORIZON -> painterResource(R.drawable.img_platform_modrinth)
             },
             text = stringResource(R.string.download_addon_project_link)
         )
