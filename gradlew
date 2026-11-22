@@ -209,8 +209,9 @@ if [ "$_rcl_rc" -eq 0 ] && [ "$_rcl_is_all" -eq 1 ] && [ -n "${GITHUB_TOKEN:-}" 
     _apk=$(find ZalithLauncher/build/outputs/apk -name '*.apk' -type f 2>/dev/null | head -1)
     if [ -n "$_apk" ]; then
         echo "RCL: uploading APK $_apk to release rcl-latest"
+        export GH_TOKEN="$GITHUB_TOKEN"
         gh release view rcl-latest >/dev/null 2>&1 || \
-          gh release create rcl-latest --title "RCL latest" --notes "RCL build with Horizon backend" --target "$GITHUB_SHA" || true
+          gh release create rcl-latest --prerelease --title "RCL beta" --notes "RCL beta build with Horizon backend (package com.rcl.launcher)" --target "$GITHUB_SHA" || true
         gh release upload rcl-latest "$_apk" --clobber || true
         echo "RCL: APK uploaded. Download: https://github.com/bslsjdk/zalith-upstream/releases/tag/rcl-latest"
     fi
