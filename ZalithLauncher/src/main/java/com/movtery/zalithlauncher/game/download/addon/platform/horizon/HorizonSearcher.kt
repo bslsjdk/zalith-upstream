@@ -35,6 +35,7 @@ class HorizonSearcher(
         HorizonKind.MOD, HorizonKind.NATIVE_MOD -> PlatformClasses.MOD
         HorizonKind.MODPACK -> PlatformClasses.MOD_PACK
         HorizonKind.RESOURCE_PACK -> PlatformClasses.RESOURCE_PACK
+        HorizonKind.DATAPACK -> PlatformClasses.SAVES
         HorizonKind.SHADER -> PlatformClasses.SHADERS
     }
 
