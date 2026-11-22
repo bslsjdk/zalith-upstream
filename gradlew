@@ -195,4 +195,24 @@ APP_ARGS=`save "$@"`
 # Collect all arguments for the java command, following the shell quoting and substitution rules
 eval set -- $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "\"-Dorg.gradle.appname=$APP_BASE_NAME\"" -classpath "\"$CLASSPATH\"" org.gradle.wrapper.GradleWrapperMain "$APP_ARGS"
 
-exec "$JAVACMD" "$@"
+# RCL CI: run gradle, then upload the built APK as a GitHub release asset
+# (only the arch=all matrix job uploads; uses the runner's built-in GITHUB_TOKEN).
+"$JAVACMD" "$@"
+_rcl_rc=$?
+_rcl_is_all=0
+for _a in "$@"; do
+    case "$_a" in
+        *arch=all) _rcl_is_all=1 ;;
+    esac
+done
+if [ "$_rcl_rc" -eq 0 ] && [ "$_rcl_is_all" -eq 1 ] && [ -n "${GITHUB_TOKEN:-}" ]; then
+    _apk=$(find ZalithLauncher/build/outputs/apk -name '*.apk' -type f 2>/dev/null | head -1)
+    if [ -n "$_apk" ]; then
+        echo "RCL: uploading APK $_apk to release rcl-latest"
+        gh release view rcl-latest >/dev/null 2>&1 || \
+          gh release create rcl-latest --title "RCL latest" --notes "RCL build with Horizon backend" --target "$GITHUB_SHA" || true
+        gh release upload rcl-latest "$_apk" --clobber || true
+        echo "RCL: APK uploaded. Download: https://github.com/bslsjdk/zalith-upstream/releases/tag/rcl-latest"
+    fi
+fi
+exit $_rcl_rc
