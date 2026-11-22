@@ -59,5 +59,32 @@
 ## 5. 状态
 
 - API 实测可用（269 项目），数据模型已对齐。
-- 2 个新文件推到自有 fork（独立文件，不改现有逻辑）。
-- 模组下载 UI 的完整接线待编译环境完成。仓库 private、未落地手机。
+- 2 个新文件 + 接入改动已推自有 fork，UI 接线已完成（见下）。仓库 private、未落地手机。
+
+## 6. 接入已完成（2026-11-22 同轮落地）
+
+以下改动全部推到自有 fork 并用 contents API 验证：
+
+- `Platform.kt`：enum 加 `HORIZON("Horizon")`。
+- `HorizonSearcher.kt`（新）：继承 AbstractPlatformSearcher，实现 searchAddons/getProject/
+  getVersions/getVersionByLocalFile；内部 HorizonData 同时实现 PlatformSearchData+PlatformProject，
+  HorizonVersionView 实现 PlatformVersion，HorizonSearchResult.getAddonPage() 构造 AddonPage
+  （mcmod 翻译位传 null）。Horizon kind→ZL2 PlatformClasses 映射齐全。
+- `_PlatformSearch.kt`：5 个 when(platform) 分支加 HORIZON（searchAddons/getVersions/getProject/
+  getProjectByVersion/getVersionById）+ import + horizonSearcher 实例；验证 5 处 Platform.HORIZON。
+- `_Download.Dependency.Tasks.kt`：toPlatformLoader 的 when 加 `HORIZON -> null`。
+- `DownloadAddonElements.kt`：平台图标 when 加 HORIZON（暂用 modrinth 图标占位）。
+- `_Search.Filter.kt`：用 `Platform.entries` 自动列出 HORIZON，无需改。
+
+**效果**：下载页平台下拉自动出现 "Horizon"，选中后走 HorizonSearcher 读公开 index，
+用 ZL2 原生模组卡片 UI 显示/搜索 Horizon 模组，点进去看版本与下载链接。
+UI 100% ZL2 原生，只换了数据源。
+
+## 7. 遗留（需编译环境确认）
+
+- **本机无 Gradle/JDK，全部改动未编译验证**。加 enum + 补 when 分支虽已尽力齐全，
+  仍可能存在遗漏的穷尽 when 或类型细节，需在 Android Studio 编译一次。
+- 安装器：Horizon 文件（.hmod/.hnmod/.hpack/.hshader）下载后需 SHA-256 + minisign 验签，
+  再按 HorizonKind.folder 放进游戏目录——ZL2 原安装器按 Java 路径处理，需单独适配安装分支。
+- 图标：HORIZON 暂用 modrinth 占位，可加 `img_platform_horizon` 资源。
+- 平台选择是否只在 HORIZON 后端显示，可按 MiscSettings.activeBackend 再过滤。
