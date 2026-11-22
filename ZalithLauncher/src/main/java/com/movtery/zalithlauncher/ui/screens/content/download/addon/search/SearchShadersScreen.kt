@@ -55,6 +55,7 @@ fun SearchShadersScreen(
             when (platform) {
                 Platform.CURSEFORGE -> CurseForgeShadersCategory.entries
                 Platform.MODRINTH -> ModrinthShadersCategory.entries
+                Platform.HORIZON -> emptyList()
             }
         },
         mapCategories = { platform, string ->
@@ -66,6 +67,7 @@ fun SearchShadersScreen(
                 Platform.CURSEFORGE -> {
                     CurseForgeShadersCategory.entries.find { it.describe() == string }
                 }
+                Platform.HORIZON -> null
             }
         },
         swapToDownload = swapToDownload
