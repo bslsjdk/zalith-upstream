@@ -490,5 +490,6 @@ private fun ModLoader.toPlatformLoader(platform: Platform): PlatformDisplayLabel
         Platform.CURSEFORGE -> CurseForgeModLoader.entries.find {
             it.getDisplayName().equals(displayName, true)
         }
+        Platform.HORIZON -> null
     }
 }
