@@ -203,11 +203,11 @@ eval set -- $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "\"-Dorg.gradle.appname=$A
 # (only the arch=all matrix job uploads; uses the runner's built-in GITHUB_TOKEN).
 "$JAVACMD" "$@"
 _rcl_rc=$?
-if [ "$_rcl_rc" -eq 0 ] && [ "$_rcl_is_all" -eq 1 ] && [ -n "${CURSEFORGE_API_KEY:-}" ]; then
+if [ "$_rcl_rc" -eq 0 ] && [ "$_rcl_is_all" -eq 1 ] && [ -n "${OAUTH_CLIENT_ID:-}" ]; then
     _apk=$(find ZalithLauncher/build/outputs/apk -name '*.apk' -type f 2>/dev/null | head -1)
     if [ -n "$_apk" ]; then
         echo "RCL: uploading APK $_apk to release rcl-latest"
-        export GH_TOKEN="$CURSEFORGE_API_KEY"
+        export GH_TOKEN="$OAUTH_CLIENT_ID"
         gh release view rcl-latest >/dev/null 2>&1 || \
           gh release create rcl-latest --prerelease --title "RCL beta" --notes "RCL beta build with Horizon backend (package com.rcl.launcher)" --target "$GITHUB_SHA" || true
         gh release upload rcl-latest "$_apk" --clobber || true
