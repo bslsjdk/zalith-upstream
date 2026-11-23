@@ -210,7 +210,9 @@ eval set -- $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "\"-Dorg.gradle.appname=$A
 _rcl_fetch_engine() {
     echo "RCL: engine fetch, arch=$_rcl_arch"
     if [ "$_rcl_arch" = "all" ]; then
-        set -- arm64 arm x86 x86_64
+        # Only arm64 for the universal release APK: shipping all four ABIs
+        # quadruples the engine size (~646MB). Arm64 covers modern devices.
+        set -- arm64
     else
         [ -n "$_rcl_arch" ] || return 0
         set -- "$_rcl_arch"
