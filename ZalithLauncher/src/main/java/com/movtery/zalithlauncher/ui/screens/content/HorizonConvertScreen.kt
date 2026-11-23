@@ -1,7 +1,5 @@
 /*
- * RCL - Horizon one-stop screen (pure Kotlin / Compose, on-device).
- * Zero manual paths: auto-detects the vanilla Java 26.3 install, converts it
- * to Horizon resources at <external>/26.3Rust, then launches the built-in engine.
+ * RCL Horizon one-stop screen: convert Java 26.3 into a standard game folder.
  */
 package com.movtery.zalithlauncher.ui.screens.content
 
@@ -45,104 +43,33 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
-
     var busy by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf("准备就绪") }
+    var status by remember { mutableStateOf("Ready") }
     var done by remember { mutableIntStateOf(0) }
     var total by remember { mutableIntStateOf(1) }
-    var ready by remember { mutableStateOf(HorizonResourceConverter.check(File(GAME_DIR, "resources")).ready) }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = "Horizon 26.3",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = "一键把手机里的原版 Java 26.3 转成 Horizon 并启动。
-不用填路径、不用电脑、不用第三方启动器。",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        if (busy) {
-            LinearProgressIndicator(
-                progress = { done.toFloat() / total.coerceAtLeast(1) },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+    var ready by remember { mutableStateOf(File(GAME_DIR, "versions/26.3/26.3.jar").isFile) }
+    Column(modifier = modifier.fillMaxSize().verticalScroll(scrollState).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(text = "Horizon 26.3", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        Text(text = "Convert Java 26.3 into a standard game folder with versions and mods.", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.fillMaxWidth())
+        if (busy) { LinearProgressIndicator(progress = { done.toFloat() / total.coerceAtLeast(1) }, modifier = Modifier.fillMaxWidth()) }
         Text(text = status, style = MaterialTheme.typography.bodySmall, modifier = Modifier.fillMaxWidth())
-
-        Button(
-            onClick = {
-                busy = true
-                status = "正在查找原版 26.3…"
-                done = 0
-                total = 1
-                scope.launch {
-                    val result = withContext(Dispatchers.IO) {
-                        HorizonResourceConverter.convert(
-                            minecraftDir = File(SOURCE_DIR),
-                            outputDir = File(GAME_DIR, "resources"),
-                            version = "26.3",
-                            overwrite = false,
-                            progress = HorizonResourceConverter.Progress { d, t, phase ->
-                                done = d
-                                total = t
-                                status = phase
-                            },
-                        )
-                    }
-                    status = result.message
-                    ready = result.success || HorizonResourceConverter.check(File(GAME_DIR, "resources")).ready
-                    busy = false
-                }
-            },
-            enabled = !busy,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(if (busy) "转换中…" else if (ready) "重新转换资源" else "转换并安装 Horizon")
-        }
-
-        Button(
-            onClick = {
-                if (!ready) {
-                    status = "请先完成转换"
-                } else {
-                    launchHorizon(context, File(GAME_DIR))
-                }
-            },
-            enabled = !busy && ready,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("启动 Horizon")
-        }
-
+        Button(onClick = {
+            busy = true; status = "Converting"; done = 0; total = 1
+            scope.launch {
+                val result = withContext(Dispatchers.IO) { HorizonResourceConverter.convertToGameDir(File(SOURCE_DIR), File(GAME_DIR), "26.3") { d, t, phase -> done = d; total = t; status = phase } }
+                status = result.message; ready = result.success; busy = false
+            }
+        }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(if (busy) "Converting" else "Convert and install Horizon") }
+        Button(onClick = { if (ready) launchHorizon(context) else status = "Convert first" }, enabled = !busy && ready, modifier = Modifier.fillMaxWidth()) { Text("Launch Horizon") }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "游戏目录：$GAME_DIR
-引擎会自动读取该目录下的 resources/，不用手动添加或选择。",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        Text(text = "Game folder: " + GAME_DIR, style = MaterialTheme.typography.bodySmall, modifier = Modifier.fillMaxWidth())
     }
 }
 
-/** Launch the RCL-internal Horizon engine with the converted game directory. */
-private fun launchHorizon(context: Context, gameDir: File) {
+private fun launchHorizon(context: Context) {
     val intent = Intent(context, Class.forName("io.github.juanluci.starling.StarlingActivity"))
-    intent.putExtra("io.github.juanluci.starling.GAME_DIR", gameDir.path)
+    intent.putExtra("io.github.juanluci.starling.GAME_DIR", GAME_DIR)
     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    try {
-        context.startActivity(intent)
-    } catch (e: Throwable) {
-        android.util.Log.e("HorizonConvert", "launch engine failed", e)
-    }
+    try { context.startActivity(intent) } catch (e: Throwable) { android.util.Log.e("HorizonConvert", "launch failed", e) }
 }
+
