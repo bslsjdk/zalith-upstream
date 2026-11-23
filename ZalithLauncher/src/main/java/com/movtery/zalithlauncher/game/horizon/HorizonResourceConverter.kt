@@ -192,4 +192,45 @@ object HorizonResourceConverter {
             }
         }
     }
+
+    /** Convert Java game dir into a STANDARD Horizon game folder that any launcher recognizes.
+     *  Copies versions/, assets/, libraries/ so ZL2 lists versions and lets the user edit mods,
+     *  then writes converted Horizon resources under resources/ for the built-in engine. */
+    fun convertToGameDir(
+        srcDir: File,
+        gameDir: File,
+        version: String = "26.3",
+        progress: Progress? = null,
+    ): ConvertResult = try {
+        progress?.onProgress(0, 5, "Preparing game folder")
+        if (!srcDir.isDirectory) return ConvertResult(false, gameDir, null, 0, "Source not found: " + srcDir.path)
+        if (!gameDir.exists() && !gameDir.mkdirs()) return ConvertResult(false, gameDir, null, 0, "Cannot create game folder")
+        // Copy the standard Minecraft directory structure so ZL2 recognizes versions and mods.
+        val jar = findClientJar(srcDir, version)
+            ?: return ConvertResult(false, gameDir, null, 0, "Cannot find " + version + ".jar")
+        progress?.onProgress(1, 5, "Copying versions")
+        File(srcDir, "versions").copyStandard(File(gameDir, "versions"))
+        progress?.onProgress(2, 5, "Copying assets and libraries")
+        File(srcDir, "assets").copyStandard(File(gameDir, "assets"))
+        File(srcDir, "libraries").copyStandard(File(gameDir, "libraries"))
+        val cfg = File(srcDir, "zalith-game.cfg")
+        if (cfg.isFile) cfg.copyTo(File(gameDir, "zalith-game.cfg"), overwrite = true)
+        progress?.onProgress(3, 5, "Extracting Horizon resources")
+        val resDir = File(gameDir, "resources")
+        if (!resDir.exists()) resDir.mkdirs()
+        val extracted = extractJar(jar, resDir, progress)
+        copyLauncherAssets(srcDir, resDir)
+        writeManifest(resDir, version)
+        File(gameDir, ".nomedia").createNewFile()
+        progress?.onProgress(5, 5, "Done")
+        ConvertResult(true, gameDir, null, extracted, "Horizon game folder ready: " + gameDir.path)
+    } catch (e: Exception) {
+        ConvertResult(false, gameDir, null, 0, "Convert failed: " + (e.message ?: e::class.java.simpleName))
+    }
+
+    /** Copy a folder recursively, keeping existing files (no overwrite). */
+    private fun File.copyStandard(dest: File) {
+        if (!this.isDirectory) return
+        this.copyRecursively(dest, overwrite = false) { _, _ -> OnErrorAction.SKIP }
+    }
 }
