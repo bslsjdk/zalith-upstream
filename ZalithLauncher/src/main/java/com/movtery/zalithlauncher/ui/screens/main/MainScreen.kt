@@ -264,6 +264,7 @@ private fun <E: TitledNavKey> TopBar(
     changeExpandedState: () -> Unit,
 ) {
     val festivals = LocalFestivals.current
+    val horizonContext = androidx.compose.ui.platform.LocalContext.current
 
     val inMultiplayerScreen = mainScreenKey is NormalNavKey.Multiplayer
     val inDownloadScreen = mainScreenKey is NestedNavKey.Download
@@ -436,6 +437,22 @@ private fun <E: TitledNavKey> TopBar(
                     Icon(
                         painter = painterResource(R.drawable.ic_folder_filled),
                         contentDescription = null
+                    )
+                }
+
+                IconButton(
+                    onClick = {
+                        horizonContext.startActivity(
+                            android.content.Intent(
+                                horizonContext,
+                                com.movtery.zalithlauncher.ui.activities.HorizonConvertActivity::class.java
+                            )
+                        )
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_play_arrow_filled),
+                        contentDescription = "Horizon"
                     )
                 }
 
