@@ -111,14 +111,9 @@
         <activity
             android:name=".ui.activities.HorizonConvertActivity"
             android:exported="true"
-            android:label="Horizon 转换"
+            android:label="Horizon"
             android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|keyboard|navigation"
-            android:screenOrientation="sensorLandscape">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:screenOrientation="sensorLandscape" />
 
         <activity
             android:name=".ui.activities.MainActivity"
