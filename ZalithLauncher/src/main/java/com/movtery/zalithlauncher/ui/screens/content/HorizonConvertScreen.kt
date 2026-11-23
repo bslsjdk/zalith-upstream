@@ -1,13 +1,14 @@
 /*
- * RCL - Horizon convert screen (pure Kotlin / Compose, on-device).
- * ZL2-native-looking screen: convert the player's own vanilla Java 26.3 install
- * into a resources zip, then launch the built-in Horizon engine (no third-party app).
+ * RCL - Horizon one-stop screen (pure Kotlin / Compose, on-device).
+ * Zero manual paths: auto-detects the vanilla Java 26.3 install, converts it
+ * to Horizon resources at <external>/26.3Rust, then launches the built-in engine.
  */
 package com.movtery.zalithlauncher.ui.screens.content
 
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,14 +19,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -38,67 +37,38 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-/**
- * Convert + launch: enter the vanilla install path, convert to a resources zip,
- * then "Launch Horizon" starts the RCL-internal engine with the converted resources.
- */
+private const val GAME_DIR = "/storage/emulated/0/26.3Rust"
+private const val SOURCE_DIR = "/storage/emulated/0/26.3"
+
 @Composable
 fun HorizonConvertScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    var sourcePath by remember { mutableStateOf("/storage/emulated/0/26.3") }
-    var outputPath by remember { mutableStateOf("/storage/emulated/0/26.3Rust/resources") }
-    var version by remember { mutableStateOf("26.3") }
-
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("准备就绪") }
     var done by remember { mutableIntStateOf(0) }
     var total by remember { mutableIntStateOf(1) }
-    var packPath by remember { mutableStateOf<String?>(null) }
+    var ready by remember { mutableStateOf(HorizonResourceConverter.check(File(GAME_DIR, "resources")).ready) }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "Java 26.3 → Horizon 26.3 转换",
+            text = "Horizon 26.3",
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
         )
         Text(
-            text = "手机上直接转换：从原版 26.3.jar 提取资源→打包→一键启动 Horizon。引擎已内置，无需电脑/Java/第三方启动器。",
+            text = "一键把手机里的原版 Java 26.3 转成 Horizon 并启动。
+不用填路径、不用电脑、不用第三方启动器。",
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        OutlinedTextField(
-            value = sourcePath,
-            onValueChange = { sourcePath = it },
-            label = { Text("原版 Java 目录") },
-            singleLine = true,
-            enabled = !busy,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        OutlinedTextField(
-            value = outputPath,
-            onValueChange = { outputPath = it },
-            label = { Text("Horizon 资源输出目录") },
-            singleLine = true,
-            enabled = !busy,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        OutlinedTextField(
-            value = version,
-            onValueChange = { version = it },
-            label = { Text("游戏版本") },
-            singleLine = true,
-            enabled = !busy,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -108,22 +78,21 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-
         Text(text = status, style = MaterialTheme.typography.bodySmall, modifier = Modifier.fillMaxWidth())
 
         Button(
             onClick = {
                 busy = true
-                status = "开始转换…"
+                status = "正在查找原版 26.3…"
                 done = 0
                 total = 1
-                packPath = null
                 scope.launch {
                     val result = withContext(Dispatchers.IO) {
                         HorizonResourceConverter.convert(
-                            minecraftDir = File(sourcePath),
-                            outputDir = File(outputPath),
-                            version = version.trim().ifEmpty { "26.3" },
+                            minecraftDir = File(SOURCE_DIR),
+                            outputDir = File(GAME_DIR, "resources"),
+                            version = "26.3",
+                            overwrite = false,
                             progress = HorizonResourceConverter.Progress { d, t, phase ->
                                 done = d
                                 total = t
@@ -132,26 +101,25 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
                         )
                     }
                     status = result.message
-                    packPath = result.packFile?.path
+                    ready = result.success || HorizonResourceConverter.check(File(GAME_DIR, "resources")).ready
                     busy = false
                 }
             },
             enabled = !busy,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (busy) "转换中…" else "开始转换")
+            Text(if (busy) "转换中…" else if (ready) "重新转换资源" else "转换并安装 Horizon")
         }
 
         Button(
             onClick = {
-                val p = packPath
-                if (p == null) {
-                    status = "请先转换成功，生成资源包"
+                if (!ready) {
+                    status = "请先完成转换"
                 } else {
-                    launchHorizon(context, File(p))
+                    launchHorizon(context, File(GAME_DIR))
                 }
             },
-            enabled = !busy && packPath != null,
+            enabled = !busy && ready,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("启动 Horizon")
@@ -159,17 +127,18 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Horizon 引擎已内置在 RCL 中，无需安装任何第三方启动器。转换产物是标准资源包。",
+            text = "游戏目录：$GAME_DIR
+引擎会自动读取该目录下的 resources/，不用手动添加或选择。",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.fillMaxWidth(),
         )
     }
 }
 
-/** Launch the RCL-internal Horizon engine (no third-party app needed). */
-private fun launchHorizon(context: Context, zip: File) {
+/** Launch the RCL-internal Horizon engine with the converted game directory. */
+private fun launchHorizon(context: Context, gameDir: File) {
     val intent = Intent(context, Class.forName("io.github.juanluci.starling.StarlingActivity"))
-    intent.putExtra("io.github.juanluci.starling.GAME_DIR", zip.parentFile?.path)
+    intent.putExtra("io.github.juanluci.starling.GAME_DIR", gameDir.path)
     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     try {
         context.startActivity(intent)
