@@ -231,6 +231,6 @@ object HorizonResourceConverter {
     /** Copy a folder recursively, keeping existing files (no overwrite). */
     private fun File.copyStandard(dest: File) {
         if (!this.isDirectory) return
-        this.copyRecursively(dest, overwrite = false) { _, _ -> OnErrorAction.SKIP }
+        this.copyRecursively(dest, overwrite = false) { _, _ -> kotlin.io.OnErrorAction.SKIP }
     }
 }
