@@ -122,3 +122,38 @@ UI 100% ZL2 原生，只换了数据源。
 - APK 产物在 CI runner 上生成；workflow 的 upload step 限定 `inputs.variant == 'Release'`，
   本次跑 Debug 未上传成 artifact（可下载），若要拿到 APK 文件需把 upload step 放开（受 workflow 写入限制暂未改）。
 - 缓存：setup-gradle 依赖缓存已启用并命中（后续构建更快）。
+
+
+## 10. 真机反馈与转换链真相（2026-11-23）
+
+用户实机反馈：①Java 版渲染大块黑色撕裂（ZL2 渲染器固有 bug）；②切 HORIZON 后"下载-游戏"页
+仍显示 Java 全版本；③整合包/模组/资源包/存档/光影下载全 403。
+
+### 已修
+- 403 根因：之前为了 APK 上传把 PAT 塞进了 `CURSEFORGE_API_KEY`（ZL2 会拿它当 CurseForge key），
+  且 CurseForge 本就需付费 key。已把 PAT 挪到 `OAUTH_CLIENT_ID`（只是 BuildKeys 字符串），
+  清空 `CURSEFORGE_API_KEY`；gradlew 上传 token 改用 `$OAUTH_CLIENT_ID`。
+- HORIZON 游戏版本列表：`SelectGameVersionScreen.filterVersions` 按 `MiscSettings.activeBackend`
+  判断，HORIZON 时只保留 26.3，Java 显示全部。run 45115582170 BUILD SUCCESSFUL。
+
+### "原版 Java 26.3 → Horizon 26.3" 转换真相（必须如实告知）
+RCL 仓库里的转换链（HorizonResourcePreparer / PrepareBridge / JvmRunner）**全是 TODO 占位**：
+- `runPrepare()` TODO（没真正执行 prepare）
+- `captureOutput()` TODO
+- `fillMissingFromNetwork()` TODO
+- `horizon-prepare` 二进制**没有编进 APK**（它是 Rust 桌面工具，跑 Java exporter 需要 JVM）
+- 上游 horizon 官方 release **只有 Linux/macOS launcher，没有 Android APK**
+
+所以当前 APK 里这个转换**跑不起来**。要真正可用，需三选一：
+1. 把 `horizon-prepare` + pinned JRE 交叉编译/内置到 Android（大工程，JNI + Java exporter）；
+2. 在 RCL 里实现一个"导入原版目录"入口，把 Java 文件复制到 Horizon 实例目录，
+   只做文件级准备，真正的 content 转换交给游戏首次启动（Horizon 的 port-pack 能力）；
+3. 引导用户用桌面版 horizon launcher 生成资源后拷到手机（最省事但需电脑）。
+
+**建议走 2**（纯 Kotlin、可编译、能落地）：加一个"导入原版 26.3 → Horizon 实例"的 SAF 入口，
+复用 ZL2 的文件选择器，把原版目录复制/链接到 `horizon-mods` 对应位置。本小姐下轮实现。
+
+### 怎么看调试信息
+- 构建日志：GitHub 仓库 Actions → 对应 run → job → 日志；API 走
+  `/actions/runs/<id>/jobs` 拿 job id，再 `/actions/jobs/<id>/logs`（302 到 blob，需去掉 Authorization 头再取）。
+- 运行日志：Android logcat 过滤 `com.rcl` / ZLApplication 的 Logger 标签；游戏日志在应用私有目录 logs/。
