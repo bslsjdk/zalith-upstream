@@ -1,10 +1,13 @@
 /*
  * RCL - Horizon convert screen (pure Kotlin / Compose, on-device).
- * A ZL2-native-looking screen that lets the player convert their own vanilla
- * Java 26.3 install into Horizon resources, entirely on the phone.
+ * ZL2-native-looking screen: convert the player's own vanilla Java 26.3 install
+ * into a resources zip, then hand it to the official Starling engine to launch.
  */
 package com.movtery.zalithlauncher.ui.screens.content
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -25,8 +28,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import com.movtery.zalithlauncher.game.horizon.HorizonResourceConverter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,11 +39,12 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
- * Convert screen: enter the vanilla install path and the output path, then tap
- * convert. All work runs on Dispatchers.IO with progress reported to the UI.
+ * Convert + launch: enter the vanilla install path, convert to a resources zip,
+ * then "Launch with Starling" shares that zip to the official engine via ACTION_VIEW.
  */
 @Composable
 fun HorizonConvertScreen(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var sourcePath by remember { mutableStateOf("/storage/emulated/0/26.3") }
@@ -49,6 +55,7 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
     var status by remember { mutableStateOf("准备就绪") }
     var done by remember { mutableIntStateOf(0) }
     var total by remember { mutableIntStateOf(1) }
+    var packPath by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = modifier
@@ -63,7 +70,7 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
             textAlign = TextAlign.Center,
         )
         Text(
-            text = "本小姐会在你的手机上直接转换：从原版 26.3.jar 提取资源，生成 Horizon 引擎认识的资源目录。不需要电脑，不需要 Java 运行环境。",
+            text = "本小姐在你的手机上直接转换：从原版 26.3.jar 提取资源，打包成官方 Starling 引擎认识的资源包，然后一键交给它启动游戏。不用电脑，不用 Java。",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -108,6 +115,7 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
                 status = "开始转换…"
                 done = 0
                 total = 1
+                packPath = null
                 scope.launch {
                     val result = withContext(Dispatchers.IO) {
                         HorizonResourceConverter.convert(
@@ -122,6 +130,7 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
                         )
                     }
                     status = result.message
+                    packPath = result.packFile?.path
                     busy = false
                 }
             },
@@ -131,11 +140,48 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
             Text(if (busy) "转换中…" else "开始转换")
         }
 
+        Button(
+            onClick = {
+                val p = packPath
+                if (p == null) {
+                    status = "请先转换成功，生成资源包"
+                } else {
+                    launchStarling(context, File(p))
+                }
+            },
+            enabled = !busy && packPath != null,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("用 Starling 启动")
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "转换完成后，Horizon 资源位于输出目录。把该目录作为游戏目录即可被引擎读取（引擎通过 horizon-resources.json 识别）。",
+            text = "启动需要手机已安装官方 Starling（io.github.juanluci.starling）或 Horizon Android。转换产物是标准资源包，也可用系统文件管理器打开并选择 Starling。",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+/** Share the generated resources zip to the official Starling/Horizon engine. */
+private fun launchStarling(context: Context, zip: File) {
+    val uri: Uri = try {
+        FileProvider.getUriForFile(context, "${context.packageName}.provider", zip)
+    } catch (e: Exception) {
+        Uri.fromFile(zip)
+    }
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(uri, "application/zip")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    try {
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        // Let the user pick an app if Starling's intent filter did not match.
+        val chooser = Intent.createChooser(intent, "选择 Starling / Horizon 打开")
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(chooser)
     }
 }
