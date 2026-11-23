@@ -8,6 +8,7 @@ package com.movtery.zalithlauncher.ui.screens.content
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -44,6 +46,7 @@ import java.io.File
 fun HorizonConvertScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
     var sourcePath by remember { mutableStateOf("/storage/emulated/0/26.3") }
     var outputPath by remember { mutableStateOf("/storage/emulated/0/26.3Rust/resources") }
@@ -58,8 +61,9 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .verticalScroll(scrollState)
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = "Java 26.3 → Horizon 26.3 转换",
@@ -68,7 +72,7 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
             textAlign = TextAlign.Center,
         )
         Text(
-            text = "本小姐在你的手机上直接转换：从原版 26.3.jar 提取资源，打包成 Horizon 引擎认识的资源包，然后一键启动 Horizon 游戏。引擎已内置，不用电脑、不用 Java、也不用装任何第三方启动器。",
+            text = "手机上直接转换：从原版 26.3.jar 提取资源→打包→一键启动 Horizon。引擎已内置，无需电脑/Java/第三方启动器。",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.fillMaxWidth(),
         )
