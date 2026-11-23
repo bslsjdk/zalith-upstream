@@ -1,7 +1,7 @@
 /*
  * RCL - Horizon convert screen (pure Kotlin / Compose, on-device).
  * ZL2-native-looking screen: convert the player's own vanilla Java 26.3 install
- * into a resources zip, then hand it to the official Starling engine to launch.
+ * into a resources zip, then launch the built-in Horizon engine (no third-party app).
  */
 package com.movtery.zalithlauncher.ui.screens.content
 
@@ -38,7 +38,7 @@ import java.io.File
 
 /**
  * Convert + launch: enter the vanilla install path, convert to a resources zip,
- * then "Launch with Starling" shares that zip to the official engine via ACTION_VIEW.
+ * then "Launch Horizon" starts the RCL-internal engine with the converted resources.
  */
 @Composable
 fun HorizonConvertScreen(modifier: Modifier = Modifier) {
@@ -68,7 +68,7 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
             textAlign = TextAlign.Center,
         )
         Text(
-            text = "本小姐在你的手机上直接转换：从原版 26.3.jar 提取资源，打包成官方 Starling 引擎认识的资源包，然后一键交给它启动游戏。不用电脑，不用 Java。",
+            text = "本小姐在你的手机上直接转换：从原版 26.3.jar 提取资源，打包成 Horizon 引擎认识的资源包，然后一键启动 Horizon 游戏。引擎已内置，不用电脑、不用 Java、也不用装任何第三方启动器。",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -144,18 +144,18 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
                 if (p == null) {
                     status = "请先转换成功，生成资源包"
                 } else {
-                    launchStarling(context, File(p))
+                    launchHorizon(context, File(p))
                 }
             },
             enabled = !busy && packPath != null,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("用 Starling 启动")
+            Text("启动 Horizon")
         }
 
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "启动需要手机已安装官方 Starling（io.github.juanluci.starling）或 Horizon Android。转换产物是标准资源包，也可用系统文件管理器打开并选择 Starling。",
+            text = "Horizon 引擎已内置在 RCL 中，无需安装任何第三方启动器。转换产物是标准资源包。",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -163,7 +163,7 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
 }
 
 /** Launch the RCL-internal Horizon engine (no third-party app needed). */
-private fun launchStarling(context: Context, zip: File) {
+private fun launchHorizon(context: Context, zip: File) {
     val intent = Intent(context, Class.forName("io.github.juanluci.starling.StarlingActivity"))
     intent.putExtra("io.github.juanluci.starling.GAME_DIR", zip.parentFile?.path)
     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
