@@ -39,12 +39,17 @@ done
 # build Debug only so the unsigned/secret-less fork does not fail on release signing.
 _rcl_args=""
 _rcl_is_all=0
+_rcl_arch=""
 for _rcl_arg in "$@"; do
     if [ "$_rcl_arg" = "ZalithLauncher:assemble" ]; then
         _rcl_arg="ZalithLauncher:assembleDebug"
     fi
     case "$_rcl_arg" in
-        *arch=all) _rcl_is_all=1 ;;
+        *arch=all) _rcl_is_all=1; _rcl_arch="all" ;;
+        *arch=arm64) _rcl_arch="arm64" ;;
+        *arch=arm) _rcl_arch="arm" ;;
+        *arch=x86_64) _rcl_arch="x86_64" ;;
+        *arch=x86) _rcl_arch="x86" ;;
     esac
     _rcl_args="$_rcl_args '$_rcl_arg'"
 done
@@ -199,8 +204,40 @@ APP_ARGS=`save "$@"`
 # Collect all arguments for the java command, following the shell quoting and substitution rules
 eval set -- $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "\"-Dorg.gradle.appname=$APP_BASE_NAME\"" -classpath "\"$CLASSPATH\"" org.gradle.wrapper.GradleWrapperMain "$APP_ARGS"
 
+# RCL CI: download Starling engine .so into jniLibs before building. The engine
+# is bound to io.github.juanluci.starling.* (our lean StarlingActivity), so the
+# APK becomes self-contained with no third-party app needed.
+_rcl_fetch_engine() {
+    echo "RCL: engine fetch, arch=$_rcl_arch"
+    if [ "$_rcl_arch" = "all" ]; then
+        set -- arm64 arm x86 x86_64
+    else
+        [ -n "$_rcl_arch" ] || return 0
+        set -- "$_rcl_arch"
+    fi
+    for _a in "$@"; do
+        case "$_a" in
+            arm64) _abi=arm64-v8a ;;
+            arm)   _abi=armeabi-v7a ;;
+            x86)   _abi=x86 ;;
+            x86_64) _abi=x86_64 ;;
+            *) continue ;;
+        esac
+        _url="https://github.com/starling-client/starling/releases/download/v0.9.0/starling-0.9.0-${_abi}.apk"
+        _tmp="/tmp/rcl-starling-${_abi}.apk"
+        echo "RCL: downloading $_url"
+        curl -fsSL "$_url" -o "$_tmp" || { echo "RCL: engine download FAILED for $_abi"; continue; }
+        _dest="ZalithLauncher/src/main/jniLibs/${_abi}"
+        mkdir -p "$_dest"
+        (cd /tmp && rm -rf "rcl-so-${_abi}" && mkdir "rcl-so-${_abi}" && cd "rcl-so-${_abi}" && unzip -q "$_tmp" "lib/${_abi}/*.so")
+        cp -f /tmp/"rcl-so-${_abi}"/"lib/${_abi}"/*.so "$_dest"/ 2>/dev/null || true
+        echo "RCL: placed $(ls "$_dest"/ 2>/dev/null | wc -l) libraries in $_dest"
+    done
+}
+
 # RCL CI: run gradle, then upload the built APK as a GitHub release asset
 # (only the arch=all matrix job uploads; uses the runner's built-in GITHUB_TOKEN).
+_rcl_fetch_engine
 "$JAVACMD" "$@"
 _rcl_rc=$?
 if [ "$_rcl_rc" -eq 0 ] && [ "$_rcl_is_all" -eq 1 ] && [ -n "${OAUTH_CLIENT_ID:-}" ]; then
