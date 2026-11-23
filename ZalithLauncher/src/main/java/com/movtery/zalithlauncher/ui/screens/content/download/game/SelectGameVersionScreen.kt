@@ -74,6 +74,7 @@ import com.movtery.zalithlauncher.game.versioninfo.MinecraftVersion
 import com.movtery.zalithlauncher.game.versioninfo.MinecraftVersions
 import com.movtery.zalithlauncher.game.versioninfo.models.isType
 import com.movtery.zalithlauncher.setting.LauncherSettings
+import com.movtery.zalithlauncher.setting.MiscSettings
 import com.movtery.zalithlauncher.ui.AndroidStringText
 import com.movtery.zalithlauncher.ui.androidText
 import com.movtery.zalithlauncher.ui.base.BaseScreen
@@ -335,7 +336,11 @@ private fun SelectGameVersionContent(
  */
 private fun List<MinecraftVersion>.filterVersions(
     versionFilter: VersionFilter
-) = this.filter { version ->
+): List<MinecraftVersion> {
+    // RCL: Horizon engine targets only MC 26.3; Java backend shows all versions.
+    val horizonOnly = MiscSettings.activeBackend.getValue() == "horizon"
+    val base = if (horizonOnly) this.filter { it.version.id == "26.3" } else this
+    return base.filter { version ->
     version.isType(
         release = versionFilter.release,
         snapshot = versionFilter.snapshot,
@@ -346,6 +351,7 @@ private fun List<MinecraftVersion>.filterVersions(
     //Fix：单独过滤版本名称
     val versionId = versionFilter.id
     versionId.isEmptyOrBlank() || version.version.id.contains(versionId)
+    }
 }
 
 @Composable
