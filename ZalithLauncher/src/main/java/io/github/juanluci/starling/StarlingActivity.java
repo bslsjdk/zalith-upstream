@@ -75,10 +75,12 @@ public class StarlingActivity extends NativeActivity {
     };
 
     private void loadGame() {
+        // NativeActivity loads libhorizon_android via the manifest's
+        // android.app.lib_name meta-data (starling_on_create entry point),
+        // so no explicit System.loadLibrary here (that would double-load/crash).
         try {
             Os.setenv("RUST_MIN_STACK", android.os.Process.is64Bit() ? "16777216" : "8388608", false);
         } catch (ErrnoException ignored) { }
-        System.loadLibrary("horizon_android");
     }
 
     @Override protected void onCreate(Bundle savedInstanceState) {
