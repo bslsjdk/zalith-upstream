@@ -296,6 +296,25 @@ android {
                 "**/libEGL_angle.so",
                 "**/libGLESv2_angle.so"
             )
+            excludes += listOf(
+                "**/libSDL2.so",
+                "**/libSDL3.so",
+                "**/libglapi.so",
+                "**/libEGL_mesa.so",
+                "**/libmobileglues.so",
+                "**/libzink_dri.so",
+                "**/libng_gl4es.so",
+                "**/libgl4es_114.so",
+                "**/libOSMesa_2121.so",
+                "**/libOSMesa_2300d.so",
+                "**/libOSMesa_8.so",
+                "**/libepoxy_0.so",
+                "**/libvirglrenderer_1.so",
+                "**/libvirgl_test_server.so",
+                "**/libvulkan_freedreno.so",
+                "**/libshaderconv.so",
+                "**/libterracotta.so"
+            )
         }
     }
 
