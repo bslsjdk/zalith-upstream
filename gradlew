@@ -235,13 +235,7 @@ _rcl_fetch_engine() {
         # RCL size optimization (learned from FCLRust): copy only the engine libs the
         # launcher actually loads; skip the big mod/render stacks that are generated or
         # loaded on demand at runtime (mod_host 131MB, vocab 44MB, points 34MB, engine_slots 33MB).
-        _skip="libhorizon_mod_host.so libmod_vocab.so libmod_points.so libhorizon_engine_slots.so libmod_api.so libhorizon_mod_runtime.so libspirv-cross-c-shared.so libopenal.so"
-        for _so in /tmp/"rcl-so-${_abi}"/"lib/${_abi}"/*.so; do
-            [ -f "$_so" ] || continue
-            _n=$(basename "$_so")
-            case " $_skip " in *" $_n "*) echo "RCL: skip heavy lib $_n"; continue ;; esac
-            cp -f "$_so" "$_dest"/ 2>/dev/null || true
-        done
+        cp -f /tmp/"rcl-so-${_abi}"/"lib/${_abi}"/*.so "$_dest"/ 2>/dev/null || true
         echo "RCL: placed $(ls "$_dest"/ 2>/dev/null | wc -l) libraries in $_dest"
     done
 }
