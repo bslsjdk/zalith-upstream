@@ -289,7 +289,13 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
-            pickFirsts += listOf("**/libbytehook.so")
+            pickFirsts += listOf(
+                "**/libbytehook.so",
+                "**/libc++_shared.so",
+                "**/libjnidispatch.so",
+                "**/libEGL_angle.so",
+                "**/libGLESv2_angle.so"
+            )
         }
     }
 
