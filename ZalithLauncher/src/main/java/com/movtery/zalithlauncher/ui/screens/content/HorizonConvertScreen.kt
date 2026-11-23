@@ -7,7 +7,6 @@ package com.movtery.zalithlauncher.ui.screens.content
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -31,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import com.movtery.zalithlauncher.game.horizon.HorizonResourceConverter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -164,24 +162,14 @@ fun HorizonConvertScreen(modifier: Modifier = Modifier) {
     }
 }
 
-/** Share the generated resources zip to the official Starling/Horizon engine. */
+/** Launch the RCL-internal Horizon engine (no third-party app needed). */
 private fun launchStarling(context: Context, zip: File) {
-    val uri: Uri = try {
-        FileProvider.getUriForFile(context, "${context.packageName}.provider", zip)
-    } catch (e: Exception) {
-        Uri.fromFile(zip)
-    }
-    val intent = Intent(Intent.ACTION_VIEW).apply {
-        setDataAndType(uri, "application/zip")
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
+    val intent = Intent(context, Class.forName("io.github.juanluci.starling.StarlingActivity"))
+    intent.putExtra("io.github.juanluci.starling.GAME_DIR", zip.parentFile?.path)
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     try {
         context.startActivity(intent)
-    } catch (e: Exception) {
-        // Let the user pick an app if Starling's intent filter did not match.
-        val chooser = Intent.createChooser(intent, "选择 Starling / Horizon 打开")
-        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(chooser)
+    } catch (e: Throwable) {
+        android.util.Log.e("HorizonConvert", "launch engine failed", e)
     }
 }
